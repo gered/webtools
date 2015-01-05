@@ -1,8 +1,11 @@
 (ns clj-webtoolbox.routes.checked
   (:require
+    [clojure.edn :as edn]
     [compojure.core :refer [routing]]
     [ring.util.response :refer [response?]]
+    [ring.util.request :refer [body-string]]
     [schema.core :as s]
+    [cheshire.core :as json]
     [clj-webtoolbox.response :as response]
     [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]))
 
@@ -88,6 +91,12 @@
       request
       params)))
 
+(defn safe-body
+  "Marks the body as safe. The request :body value is copied to :safe-params under
+   the :body key (mainly for ease of access via parameter destructuring in routefn)."
+  [request]
+  (assoc-in request [:safe-params :body] (:body request)))
+
 (defn validate
   "Validates the specified parameter using function f which gets passed the value
    of the parameter. If f returns a 'truthy' value the parameter is marked safe.
@@ -110,6 +119,22 @@
       (if (nil? (s/check schema (get-in request k)))
         (safe request parent [param])))))
 
+(defn validate-body
+  "Validates the request body using function f which gets passed the body of
+   the request. If f returns a 'truthy' value, the body is marked safe. You
+   likely will want to transform the body first before validation."
+  [request f]
+  (if (f (:body request))
+    (safe-body request)))
+
+(defn validate-body-schema
+  "Validates the request body by checking it against the given schema. If it
+   validates, the body is marked safe. You likely will want to transform the body
+   first before validation."
+  [request schema]
+  (if (nil? (s/check schema (:body request)))
+    (safe-body request)))
+
 (defn transform
   "Transforms the specified parameter using function f which gets passed the value
    of the parameter. A nested parameter can be transformed by specifying it as a
@@ -121,3 +146,23 @@
   ([request parent param f]
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (update-in request k f))))
+
+(defn transform-string-body
+  "Transforms the body of the request, converting it to a string. The returned
+   request will contain a string :body value."
+  [request]
+  (assoc request :body (body-string request)))
+
+(defn transform-json-body
+  "Transforms the body of the request as JSON. The returned request will contain
+   a :body value with the parsed JSON result."
+  [request]
+  (let [body (body-string request)]
+    (assoc request :body (json/parse-string body true))))
+
+(defn transform-edn-body
+  "Transforms the body of the request as EDN. The returned request will contain
+   a :body value with the parsed EDN result."
+  [request]
+  (let [body (body-string request)]
+    (assoc request :body (edn/read-string body))))
