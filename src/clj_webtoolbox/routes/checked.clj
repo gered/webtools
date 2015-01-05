@@ -15,23 +15,33 @@
          ~fail-response
          (~fail-response ~request))))
 
-(defmacro checked-routes
-  "Wraps any number of routes with one or more filters which are run before any of the
-   wrapped routes are executed. If any of the filters return nil, fail-response is
-   returned by the server instead of the running a route handler. Filter functions
-   should accept a Ring request as the first argument and return a Ring request map
-   if the filter logic passed. The same Ring request map is threaded through all of
-   the filters before eventually being passed on to the route handler."
-  [checks fail-response & routes]
-  `(fn [request#]
-     (let [result# (threaded-checks request# ~checks ~fail-response)]
-       (if (response? result#)
-         result#
-         (routing result# ~@routes)))))
+(def default-wrap-checks-error-response
+  (-> (response/content "Handler checks did not all pass.")
+      (response/status 500)))
 
 (def default-check-error-response
   (-> (response/content "Route checks did not all pass.")
       (response/status 500)))
+
+(defmacro wrap-checks
+  "Wraps a handler (e.g. subset of routes) with one or more filters ('checks') which
+   are run before to handler is run. If any of the filters return nil, fail-response
+   is returned by the server instead of running the wrapped handler. Filter functions
+   should accept a Ring request as the first argument and return a Ring request map
+   if the filter logic passed. The same Ring request map is threaded through all of
+   the filters before eventually being passed on to the handler. If a failure
+   response is not specified via :on-fail, then a default HTTP 500 response is used."
+  {:arglists '([checks & body]
+               [checks :on-fail fail-response & body])}
+  [checks & body]
+  (let [has-fail-response? (= :on-fail (first body))
+        fail-response      (if has-fail-response? (second body) default-wrap-checks-error-response)
+        body               (if has-fail-response? (drop 2 body) body)]
+    `(fn [request#]
+       (let [result# (threaded-checks request# ~checks ~fail-response)]
+         (if (response? result#)
+           result#
+           (routing result# ~@body))))))
 
 (defmacro checked-route
   "Used in place of a normal Compojure route handler's body. Applies a series of
@@ -59,7 +69,7 @@
    wrapped in a call to checked-route, so you just define the contents of
    it as you would if you were using checked-route manually."
   {:arglists '([method-fn path & body]
-                [method-fn path :on-fail fail-response & body])}
+               [method-fn path :on-fail fail-response & body])}
   [method-fn path & body]
   `(~method-fn ~path []
      (checked-route ~@body)))
