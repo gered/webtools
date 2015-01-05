@@ -102,10 +102,13 @@
       params)))
 
 (defn safe-body
-  "Marks the body as safe. The request :body value is copied to :safe-params under
-   the :body key (mainly for ease of access via parameter destructuring in routefn)."
-  [request]
-  (assoc-in request [:safe-params :body] (:body request)))
+  "Marks the body as safe. The request's :body value is either copied into
+   :safe-params under the :body key, or is merged into the existing :safe-params
+   map (controlled via the copy-into-params? argument)."
+  [request & [copy-into-params?]]
+  (if copy-into-params?
+    (assoc-in request [:safe-params :body] (:body request))
+    (update-in request [:safe-params] merge (:body request))))
 
 (defn validate
   "Validates the specified parameter using function f which gets passed the value
@@ -133,17 +136,17 @@
   "Validates the request body using function f which gets passed the body of
    the request. If f returns a 'truthy' value, the body is marked safe. You
    likely will want to transform the body first before validation."
-  [request f]
+  [request f & [copy-into-params?]]
   (if (f (:body request))
-    (safe-body request)))
+    (safe-body request copy-into-params?)))
 
 (defn validate-body-schema
   "Validates the request body by checking it against the given schema. If it
    validates, the body is marked safe. You likely will want to transform the body
    first before validation."
-  [request schema]
+  [request schema & [copy-into-params?]]
   (if (nil? (s/check schema (:body request)))
-    (safe-body request)))
+    (safe-body request copy-into-params?)))
 
 (defn transform
   "Transforms the specified parameter using function f which gets passed the value
