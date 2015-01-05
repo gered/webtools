@@ -72,23 +72,41 @@
 
 (defn safe
   "Marks one or more parameters as safe (copying them from the request's :params
-   map to :safe-params)."
-  [request & params]
-  (let [safe-params (select-keys (:params request) params)]
-    (update-in request [:safe-params] merge safe-params)))
+   map to :safe-params). The params argument is a vector of keywords referring
+   to parameters to be marked as safe. Each parameter itself can refer to a nested
+   value by specifying the parameter as another vector of keywords. All params are
+   assumed to be located under :params in the request unless otherwise specified
+   via parent."
+  ([request params] (safe request :params params))
+  ([request parent params]
+    (reduce
+      (fn [request param]
+        (let [src-k (if (sequential? param) (concat [parent] param) [parent param])
+              dst-k (if (sequential? param) (concat [:safe-params] param) [:safe-params param])]
+          (assoc-in request dst-k (get-in request src-k))))
+      request
+      params)))
 
 (defn validate
   "Validates the specified parameter using function f which gets passed the value
-   of the parameter and any additional arguments given. If f returns a 'truthy' value
-   the parameter is marked safe."
-  [request param f & args]
-  (if (apply f (get-in request [:params param]) args)
-    (safe request param)))
+   of the parameter. If f returns a 'truthy' value the parameter is marked safe.
+   A nested parameter can be checked by specifying it as a vector of keywords.
+   Parameters are assumed to be located under :params in the request unless
+   otherwise specified via parent."
+  ([request param f] (validate request :params param f))
+  ([request parent param f]
+    (let [k (if (sequential? param) (concat [parent] param) [parent param])]
+      (if (f (get-in request k))
+        (safe request parent [param])))))
 
 (defn transform
   "Transforms the specified parameter using function f which gets passed the value
-   of the parameter and any additional arguments given. Note that this does not
-   mark a parameter safe after transformation. This is intended to be used to
-   perform any pre-validation transformations if necessary."
-  [request param f & args]
-  (apply update-in request [:params param] f args))
+   of the parameter. A nested parameter can be transformed by specifying it as a
+   vector of keywords. Parameters are assumed to be located under :params in the
+   request unless otherwise specified via parent. Note that this does not mark a
+   parameter safe after transformation. This is intended to be used to perform any
+   pre-validation transformations if necessary."
+  ([request param f] (transform request :params param f))
+  ([request parent param f]
+    (let [k (if (sequential? param) (concat [parent] param) [parent param])]
+      (update-in request k f))))
