@@ -176,3 +176,15 @@
   [request]
   (let [body (body-string request)]
     (assoc request :body (edn/read-string body))))
+
+(defn auto-transform-body
+  "Automatically transforms the body of the request, parsing it as JSON or EDN
+   based on the request's Content-Type header. The returned request will contain
+   a :body value with the parsed result, or the original value if the
+   Content-Type header was not recognized."
+  [request]
+  (let [body (body-string request)]
+    (condp = (:content-type request)
+      "application/json" (assoc request :body (json/parse-string body true))
+      "application/edn"  (assoc request :body (edn/read-string body))
+      request)))
