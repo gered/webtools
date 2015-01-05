@@ -2,6 +2,7 @@
   (:require
     [compojure.core :refer [routing]]
     [ring.util.response :refer [response?]]
+    [schema.core :as s]
     [clj-webtoolbox.response :as response]
     [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]))
 
@@ -97,6 +98,16 @@
   ([request parent param f]
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (if (f (get-in request k))
+        (safe request parent [param])))))
+
+(defn validate-schema
+  "Validates the specified parameter by checking it against the given schema.
+   If it validates, the parameter is marked safe. Follows the same rules for
+   param/parent handling as validate."
+  ([request param schema] (validate-schema request :params param schema))
+  ([request parent param schema]
+    (let [k (if (sequential? param) (concat [parent] param) [parent param])]
+      (if (nil? (s/check schema (get-in request k)))
         (safe request parent [param])))))
 
 (defn transform
