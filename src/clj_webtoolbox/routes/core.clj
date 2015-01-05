@@ -31,11 +31,11 @@
 
 ;; -----------------------------------------------------------------------------
 
-(defmacro with-middleware
-  "Applies a sequence of middleware functions to a series of routes wrapped
-   by this macro. For best results, use _within_ a compojure.core/context
-   call. Remember that middleware will be applied in the reverse order
-   that it is specified in."
-  [middlewares & routes]
-  `(-> (compojure.core/routes ~@routes)
-       ~@middlewares))
+(defmacro wrap-middleware
+  "Applies middleware to a handler. Intended to be used to wrap a subset of
+   Compojure routes with middleware. The middleware is only run if one of the
+   routes being wrapped is matched against the current request."
+  [handler & middlewares]
+  (let [middleware-forms (map #(concat '(compojure.core/wrap-routes) %) middlewares)]
+    `(-> ~handler
+         ~@middleware-forms)))
