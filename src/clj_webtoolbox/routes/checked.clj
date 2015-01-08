@@ -23,7 +23,7 @@
   (-> (response/content "Route checks did not all pass.")
       (response/status 500)))
 
-(defmacro wrap-checks
+(defmacro checked-routes
   "Wraps a handler (e.g. subset of routes) with one or more filters ('checks') which
    are run before to handler is run. If any of the filters return nil, fail-response
    is returned by the server instead of running the wrapped handler. Filter functions
