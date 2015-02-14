@@ -116,7 +116,9 @@
     (assoc-in request [:safe-params :body] (:body request))
     (update-in request [:safe-params] merge (:body request))))
 
-(defn- assoc-validation-error [request param]
+(defn set-validation-error
+  "Adds a parameter to the list of validation errors."
+  [request param]
   (update-in
     request
     [:validation-errors]
@@ -133,7 +135,7 @@
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (if (f (get-in request k))
         (safe request parent [param])
-        (assoc-validation-error request param)))))
+        (set-validation-error request param)))))
 
 (defn validate-schema
   "Validates the specified parameter by checking it against the given schema.
@@ -144,7 +146,7 @@
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (if (nil? (s/check schema (get-in request k)))
         (safe request parent [param])
-        (assoc-validation-error request param)))))
+        (set-validation-error request param)))))
 
 (defn validate-body
   "Validates the request body using function f which gets passed the body of
@@ -153,7 +155,7 @@
   [request f & [copy-into-params?]]
   (if (f (:body request))
     (safe-body request copy-into-params?)
-    (assoc-validation-error request :body)))
+    (set-validation-error request :body)))
 
 (defn validate-body-schema
   "Validates the request body by checking it against the given schema. If it
@@ -162,7 +164,7 @@
   [request schema & [copy-into-params?]]
   (if (nil? (s/check schema (:body request)))
     (safe-body request copy-into-params?)
-    (assoc-validation-error request :body)))
+    (set-validation-error request :body)))
 
 (defn transform
   "Transforms the specified parameter using function f which gets passed the value
