@@ -7,13 +7,19 @@
     [schema.core :as s]
     [cheshire.core :as json]
     [clj-webtoolbox.response :as response]
-    [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]))
+    [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]
+    [clj-webtoolbox.utils :refer [pred-> request?]]))
+
+(defn no-errors? [request]
+  (not (seq (:validation-errors request))))
 
 (defmacro threaded-checks [request checks fail-response]
-  `(or (some-> ~request ~@checks)
+  `(let [result# (pred-> ~request no-errors? ~@checks)]
+     (if (request? result#)
        (if (response? ~fail-response)
          ~fail-response
-         (~fail-response ~request))))
+         (~fail-response result#))
+       result#)))
 
 (def default-wrap-checks-error-response
   (-> (response/content "Handler checks did not all pass.")
@@ -110,6 +116,12 @@
     (assoc-in request [:safe-params :body] (:body request))
     (update-in request [:safe-params] merge (:body request))))
 
+(defn- assoc-validation-error [request param]
+  (update-in
+    request
+    [:validation-errors]
+    #(if % (conj % param) [param])))
+
 (defn validate
   "Validates the specified parameter using function f which gets passed the value
    of the parameter. If f returns a 'truthy' value the parameter is marked safe.
@@ -120,7 +132,8 @@
   ([request parent param f]
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (if (f (get-in request k))
-        (safe request parent [param])))))
+        (safe request parent [param])
+        (assoc-validation-error request param)))))
 
 (defn validate-schema
   "Validates the specified parameter by checking it against the given schema.
@@ -130,7 +143,8 @@
   ([request parent param schema]
     (let [k (if (sequential? param) (concat [parent] param) [parent param])]
       (if (nil? (s/check schema (get-in request k)))
-        (safe request parent [param])))))
+        (safe request parent [param])
+        (assoc-validation-error request param)))))
 
 (defn validate-body
   "Validates the request body using function f which gets passed the body of
@@ -138,7 +152,8 @@
    likely will want to transform the body first before validation."
   [request f & [copy-into-params?]]
   (if (f (:body request))
-    (safe-body request copy-into-params?)))
+    (safe-body request copy-into-params?)
+    (assoc-validation-error request :body)))
 
 (defn validate-body-schema
   "Validates the request body by checking it against the given schema. If it
@@ -146,7 +161,8 @@
    first before validation."
   [request schema & [copy-into-params?]]
   (if (nil? (s/check schema (:body request)))
-    (safe-body request copy-into-params?)))
+    (safe-body request copy-into-params?)
+    (assoc-validation-error request :body)))
 
 (defn transform
   "Transforms the specified parameter using function f which gets passed the value
