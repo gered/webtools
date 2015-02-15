@@ -1,4 +1,5 @@
 (ns clj-webtoolbox.routes.checked
+  "Functions and macros to assist with writing more declarative Compojure route validations."
   (:require
     [clojure.edn :as edn]
     [compojure.core :refer [routing]]
@@ -30,13 +31,14 @@
       (response/status 500)))
 
 (defmacro checked-routes
-  "Wraps a handler (e.g. subset of routes) with one or more filters ('checks') which
-   are run before to handler is run. If any of the filters return nil, fail-response
-   is returned by the server instead of running the wrapped handler. Filter functions
-   should accept a Ring request as the first argument and return a Ring request map
-   if the filter logic passed. The same Ring request map is threaded through all of
-   the filters before eventually being passed on to the handler. If a failure
-   response is not specified via :on-fail, then a default HTTP 500 response is used."
+  "Wraps a handler (e.g. subset of routes) with one or more filters (aka 'checks' or
+   'validations') which are run before to handler is run. If any of the filters return
+   nil, fail-response is returned by the server instead of running the wrapped handler.
+   Filter functions should accept a Ring request as the first argument and return a
+   Ring request map if the filter logic passed. The same Ring request map is threaded
+   through all of the filters before eventually being passed on to the handler. If a
+   failure response is not specified via :on-fail, then a default HTTP 500 response
+   is used."
   {:arglists '([checks & body]
                [checks :on-fail fail-response & body])}
   [checks & body]
@@ -83,7 +85,7 @@
 (defmacro routefn
   "The final form present in a checked-route call. The forms in body are executed
    only if none of the previous filters failed. The arguments vector is destructured
-   the same was as normal Compojure route parameter destructuring is done, except
+   the same way as normal Compojure route parameter destructuring is done, except
    that parameters come from the request's :safe-params map instead."
   [request args & body]
   (if (vector? args)
