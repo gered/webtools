@@ -16,7 +16,8 @@
 
 (defmacro threaded-checks [request checks fail-response]
   `(let [result# (pred-> ~request no-errors? ~@checks)]
-     (if (request? result#)
+     (if (and (request? result#)
+              (not (no-errors? result#)))
        (if (response? ~fail-response)
          ~fail-response
          (~fail-response result#))
