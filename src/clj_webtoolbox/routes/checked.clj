@@ -11,13 +11,13 @@
     [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]
     [clj-webtoolbox.utils :refer [pred-> request?]]))
 
-(defn no-errors? [request]
-  (not (seq (:validation-errors request))))
+(defn has-errors? [request]
+  (seq (:validation-errors request)))
 
 (defmacro threaded-checks [request checks fail-response]
-  `(let [result# (pred-> ~request no-errors? ~@checks)]
+  `(let [result# (pred-> ~request #(not (has-errors? %)) ~@checks)]
      (if (and (request? result#)
-              (not (no-errors? result#)))
+              (has-errors? result#))
        (if (response? ~fail-response)
          ~fail-response
          (~fail-response result#))
