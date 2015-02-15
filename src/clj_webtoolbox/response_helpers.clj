@@ -3,7 +3,7 @@
     [clj-webtoolbox.response :as response]))
 
 (defn- ->response [body status]
-  (-> (response/content body)
+  (-> (response/content (if (nil? body) "" body))
       (response/status status)))
 
 (defn ok [& [body]] (->response body 200))

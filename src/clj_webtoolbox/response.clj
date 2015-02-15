@@ -9,7 +9,7 @@
 (def ^:private base-response
   {:status  200
    :headers {}
-   :body    nil})
+   :body    ""})
 
 (defn content
   "Returns a Ring response where the body is set to the value given."
