@@ -1,6 +1,7 @@
 (ns clj-webtoolbox.routes.checked
   "Functions and macros to assist with writing more declarative Compojure route validations."
   (:require
+    [clojure.string :as string]
     [clojure.edn :as edn]
     [compojure.core :refer [routing]]
     [ring.util.response :refer [response?]]
@@ -23,13 +24,21 @@
          (~fail-response result#))
        result#)))
 
-(def default-wrap-checks-error-response
-  (-> (response/content "Handler checks did not all pass.")
-      (response/status 500)))
+(defn default-wrap-checks-error-response
+  [{:keys [validation-errors] :as request}]
+  (let [validation-errors-str (string/join "," validation-errors)]
+    (-> (response/content (str "Handler checks did not all pass."
+                               (if (seq validation-errors)
+                                 (str " Errors in: " validation-errors-str))))
+        (response/status 500))))
 
-(def default-check-error-response
-  (-> (response/content "Route checks did not all pass.")
-      (response/status 500)))
+(defn default-check-error-response
+  [{:keys [validation-errors] :as request}]
+  (let [validation-errors-str (string/join "," validation-errors)]
+    (-> (response/content (str "Route checks did not all pass."
+                               (if (seq validation-errors)
+                                 (str " Errors in: " validation-errors-str))))
+        (response/status 500))))
 
 (defmacro checked-routes
   "Wraps a handler (e.g. subset of routes) with one or more filters (aka 'checks' or
@@ -44,7 +53,7 @@
                [checks :on-fail fail-response & body])}
   [checks & body]
   (let [has-fail-response? (= :on-fail (first body))
-        fail-response      (if has-fail-response? (second body) default-wrap-checks-error-response)
+        fail-response      (if has-fail-response? (second body) `default-wrap-checks-error-response)
         body               (if has-fail-response? (drop 2 body) body)]
     `(fn [request#]
        (let [result# (threaded-checks request# ~checks ~fail-response)]
@@ -66,7 +75,7 @@
                [:on-fail fail-response & body])}
   [& body]
   (let [has-fail-response? (= :on-fail (first body))
-        fail-response      (if has-fail-response? (second body) default-check-error-response)
+        fail-response      (if has-fail-response? (second body) `default-check-error-response)
         body               (if has-fail-response? (drop 2 body) body)]
     `(fn [request#]
        (threaded-checks request# ~body ~fail-response))))
