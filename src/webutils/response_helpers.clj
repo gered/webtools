@@ -1,6 +1,6 @@
-(ns clj-webtoolbox.response-helpers
+(ns webtools.response-helpers
   (:require
-    [clj-webtoolbox.response :as response]))
+    [webtools.response :as response]))
 
 (defn- ->response [body status]
   (-> (response/content (if (nil? body) "" body))

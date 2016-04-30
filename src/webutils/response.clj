@@ -1,4 +1,4 @@
-(ns clj-webtoolbox.response
+(ns webtools.response
   "Response helpers to compliment those provided by ring.util.response. Some
    of these are mostly just copies with maybe slight tweaks here and there
    just so that application code need not include both namespaces unless

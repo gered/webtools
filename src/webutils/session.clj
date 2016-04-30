@@ -1,4 +1,4 @@
-(ns clj-webtoolbox.session
+(ns webtools.session
   "Convenience helper functions for applying session data to Ring response maps."
   (:refer-clojure :exclude [set dissoc assoc assoc-in update-in]))
 

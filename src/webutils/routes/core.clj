@@ -1,4 +1,4 @@
-(ns clj-webtoolbox.routes.core
+(ns webtools.routes.core
   (:require
     compojure.core))
 

@@ -1,4 +1,4 @@
-(ns clj-webtoolbox.routes.checked
+(ns webtools.routes.checked
   "Functions and macros to assist with writing more declarative Compojure route validations."
   (:require
     [clojure.string :as string]
@@ -8,9 +8,9 @@
     [ring.util.request :refer [body-string]]
     [schema.core :as s]
     [cheshire.core :as json]
-    [clj-webtoolbox.response :as response]
-    [clj-webtoolbox.routes.core :refer [destructure-route-bindings]]
-    [clj-webtoolbox.utils :refer [pred-> request?]]))
+    [webtools.response :as response]
+    [webtools.routes.core :refer [destructure-route-bindings]]
+    [webtools.utils :refer [pred-> request?]]))
 
 (defn has-errors? [request]
   (seq (:validation-errors request)))

@@ -1,4 +1,4 @@
-(ns clj-webtoolbox.utils)
+(ns webtools.utils)
 
 (defmacro pred->
   "Threads exp through the forms (via ->) as long as (pred exp)
