@@ -1,4 +1,4 @@
-(defproject gered/webtools "0.0.1"
+(defproject gered/webtools "0.0.2"
   :description "Miscellaneous helper functions and macros for Ring and Compojure."
   :url         "https://github.com/gered/webtools"
   :license     {:name "MIT License"
