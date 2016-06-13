@@ -6,6 +6,7 @@
 
   :dependencies [[cheshire "5.5.0"]
                  [prismatic/schema "1.0.4"]
+                 [hiccup "1.0.5"]
                  [cljs-ajax "0.5.5"]
                  [secretary "1.2.3"]]
 
