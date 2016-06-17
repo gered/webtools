@@ -55,13 +55,17 @@
   (-> (str (context-url) url)
       (string/replace #"(/+)" "/")))
 
+(defonce navigate-history (History.))
+
+(defn- on-navigate-event
+  [event]
+  (secretary/dispatch! (.-token event)))
+
 (defn hook-browser-navigation!
   []
-  (doto (History.)
-    (events/listen
-      EventType/NAVIGATE
-      (fn [event]
-        (secretary/dispatch! (.-token event))))
+  (doto navigate-history
+    (.setEnabled false)
+    (events/listen EventType/NAVIGATE on-navigate-event)
     (.setEnabled true)))
 
 (defn redirect!
