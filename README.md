@@ -8,7 +8,7 @@ Miscellaneous helper functions and macros for Ring and Compojure.
 ## Leiningen
 
 ```clojure
-[gered/webtools "0.1"]
+[gered/webtools "0.1.1"]
 ```
 
 ## Usage
