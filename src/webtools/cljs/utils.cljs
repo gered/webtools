@@ -51,9 +51,11 @@
       (dom/has-class? "old-ie")))
 
 (defn ->url
-  [url]
-  (-> (str (context-url) url)
-      (string/replace #"(/+)" "/")))
+  [& url]
+  (as-> url x
+        (string/join x)
+        (str (context-url) "/" x)
+        (string/replace x #"(/+)" "/")))
 
 (defonce navigate-history (History.))
 
